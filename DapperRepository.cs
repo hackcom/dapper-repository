@@ -15,10 +15,19 @@ namespace Hackcom.Dapper
 
     public interface IDapperRepository<T>
     {
+        string SelectFields { get; }
+        string TableName { get; }
+
         IEnumerable<T> GetAll();
         T Get(object primaryKey);
         IEnumerable<T> Find(string where, object param = null);
         IEnumerable<T> Select(string extraQuery, object param = null);
+        IEnumerable<T> Join<T1>(IDapperRepository<T1> join1, Func<T, T1, T> map, string joinOn, string where = null);
+        IEnumerable<T> Join<T1, T2>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, Func<T, T1, T2, T> map, string joinOn, string where = null);
+        IEnumerable<T> Join<T1, T2, T3>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, Func<T, T1, T2, T3, T> map, string joinOn, string where = null);
+        IEnumerable<T> Join<T1, T2, T3, T4>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, Func<T, T1, T2, T3, T4, T> map, string joinOn, string where = null);
+        IEnumerable<T> Join<T1, T2, T3, T4, T5>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, Func<T, T1, T2, T3, T4, T5, T> map, string joinOn, string where = null);
+        IEnumerable<T> Join<T1, T2, T3, T4, T5, T6>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, IDapperRepository<T6> join6, Func<T, T1, T2, T3, T4, T5, T6, T> map, string joinOn, string where = null);
 
         int Insert(T entity);
         T Add(T item);
@@ -36,7 +45,7 @@ namespace Hackcom.Dapper
         private IRepoContext _ctx;
 
         private string _tableName;
-        protected string TableName
+        public string TableName
         {
             get
             {
@@ -53,6 +62,28 @@ namespace Hackcom.Dapper
             }
         }
 
+        private string _selectFields;
+        public string SelectFields
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_selectFields))
+                {
+                    if (EntityFields.Any())
+                    {
+                        var fields = EntityFields.TakeWhile((t, i) => DbFields.Count >= i).Select((t, i) => string.Format("{0}.{1} AS {2}", TableName, DbFields[i], t)).ToList();
+                        _selectFields = string.Join(",", fields);
+                    }
+                    else
+                    {
+                        _selectFields = string.Join(",", DbFields);
+                    }
+                }
+                return _selectFields;
+            }
+            set { _selectFields = value; }
+        }
+
         private string _querySelect;
         protected string QuerySelect
         {
@@ -60,18 +91,19 @@ namespace Hackcom.Dapper
             {
                 if (string.IsNullOrEmpty(_querySelect))
                 {
-                    string selectFields = string.Empty;
-                    if (EntityFields.Any())
-                    {
-                        var fields = EntityFields.TakeWhile((t, i) => DbFields.Count >= i).Select((t, i) => string.Format("{0} AS {1}", DbFields[i], t)).ToList();
-                        selectFields = string.Join(",", fields);
-                    }
-                    else
-                    {
-                        selectFields = string.Join(",", DbFields);
-                    }
+                    //string selectFields = string.Empty;
+                    //if (EntityFields.Any())
+                    //{
+                    //    var fields = EntityFields.TakeWhile((t, i) => DbFields.Count >= i).Select((t, i) => string.Format("{0}.{1} AS {2}", TableName, DbFields[i], t)).ToList();
+                    //    selectFields = string.Join(",", fields);
+                    //}
+                    //else
+                    //{
+                    //    selectFields = string.Join(",", DbFields);
+                    //}
 
-                    _querySelect = string.Format("Select {1} From {0}", TableName, selectFields);
+                    //_querySelect = string.Format("Select {1} From {0}", TableName, selectFields);
+                    _querySelect = string.Format("Select {1} From {0}", TableName, SelectFields);
                 }
 
                 return _querySelect;
@@ -271,6 +303,132 @@ namespace Hackcom.Dapper
             return UsingDb(db => db.Query<T>(sql, param));
         }
 
+        public virtual IEnumerable<T> Join<T1>(IDapperRepository<T1> join1, Func<T, T1, T> map, string joinOn, string where = null)
+        {
+            var fieldArr = new List<string>()
+            {
+                SelectFields,
+                join1.SelectFields
+            };
+            var tableNameArr = new List<string>()
+            {
+                join1.TableName
+            };
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var splitOn = GetSplitOn(joinOn);
+            return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
+        }
+
+        public virtual IEnumerable<T> Join<T1, T2>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, Func<T, T1, T2, T> map, string joinOn, string where = null)
+        {
+            var fieldArr = new List<string>()
+            {
+                SelectFields,
+                join1.SelectFields,
+                join2.SelectFields
+            };
+            var tableNameArr = new List<string>()
+            {
+                join1.TableName,
+                join2.TableName
+            };
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var splitOn = GetSplitOn(joinOn);
+            return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
+        }
+
+        public virtual IEnumerable<T> Join<T1, T2, T3>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, Func<T, T1, T2, T3, T> map, string joinOn, string where = null)
+        {
+            var fieldArr = new List<string>()
+            {
+                SelectFields,
+                join1.SelectFields,
+                join2.SelectFields,
+                join3.SelectFields
+            };
+            var tableNameArr = new List<string>()
+            {
+                join1.TableName,
+                join2.TableName,
+                join3.TableName
+            };
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var splitOn = GetSplitOn(joinOn);
+            return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
+        }
+
+        public virtual IEnumerable<T> Join<T1, T2, T3, T4>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, Func<T, T1, T2, T3, T4, T> map, string joinOn, string where = null)
+        {
+            var fieldArr = new List<string>()
+            {
+                SelectFields,
+                join1.SelectFields,
+                join2.SelectFields,
+                join3.SelectFields,
+                join4.SelectFields
+            };
+            var tableNameArr = new List<string>()
+            {
+                join1.TableName,
+                join2.TableName,
+                join3.TableName,
+                join4.TableName
+            };
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var splitOn = GetSplitOn(joinOn);
+            return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
+        }
+
+        public virtual IEnumerable<T> Join<T1, T2, T3, T4, T5>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, Func<T, T1, T2, T3, T4, T5, T> map, string joinOn, string where = null)
+        {
+            var fieldArr = new List<string>()
+            {
+                SelectFields,
+                join1.SelectFields,
+                join2.SelectFields,
+                join3.SelectFields,
+                join4.SelectFields,
+                join5.SelectFields
+            };
+            var tableNameArr = new List<string>()
+            {
+                join1.TableName,
+                join2.TableName,
+                join3.TableName,
+                join4.TableName,
+                join5.TableName
+            };
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var splitOn = GetSplitOn(joinOn);
+            return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
+        }
+        
+        public virtual IEnumerable<T> Join<T1, T2, T3, T4, T5, T6>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, IDapperRepository<T6> join6, Func<T, T1, T2, T3, T4, T5, T6, T> map, string joinOn, string where = null)
+        {
+            var fieldArr = new List<string>()
+            {
+                SelectFields,
+                join1.SelectFields,
+                join2.SelectFields,
+                join3.SelectFields,
+                join4.SelectFields,
+                join5.SelectFields,
+                join6.SelectFields
+            };
+            var tableNameArr = new List<string>()
+            {
+                join1.TableName,
+                join2.TableName,
+                join3.TableName,
+                join4.TableName,
+                join5.TableName,
+                join6.TableName
+            };
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var splitOn = GetSplitOn(joinOn);
+            return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
+        }
+
         public virtual T Add(T entity)
         {
             string where = IsPrimaryKeyAutoGenerated
@@ -330,11 +488,58 @@ namespace Hackcom.Dapper
         #endregion
 
         #region Private Functions
-        List<string> GetEntityFieldNames()
+        private IEnumerable<string> GetEntityFieldNames()
         {
-            PropertyInfo[] props = typeof(T).GetProperties();
-            return props.Select(p => p.Name).ToList();
+            return GetEntityFieldNames<T>();
         }
+
+        private IEnumerable<string> GetEntityFieldNames<TOther>()
+        {
+            PropertyInfo[] props = typeof(TOther).GetProperties();
+            return props.Where(p => !p.GetGetMethod().IsVirtual).Select(p => p.Name);
+        }
+
+        private string GetSplitOn(string joinOn)
+        {
+            var splitOns = joinOn
+                .Split(',')
+                .Select(j => j.Trim())
+                .Where(j => j.Contains('='))
+                .Select(j => j.Substring(j.LastIndexOf('.') + 1).Trim());
+            return string.Join(",", splitOns);
+        }
+
+        private IEnumerable<string> GetJoinOn(string joinOn)
+        {
+            return joinOn.Split(',').Select(j => j.Trim());
+        }
+
+        private string GetJoinQuery(string joinOn, string where, List<string> fieldArr, List<string> tableNameArr)
+        {
+            var joinOns = GetJoinOn(joinOn).ToArray();
+
+            if (tableNameArr.Count != joinOns.Count())
+            {
+                throw new Exception("Table number and join number does not match.");
+            }
+
+            var fields = string.Join(",", fieldArr);
+            var sql = new StringBuilder();
+            sql.AppendFormat("SELECT {0} FROM {1}", fields, TableName);
+            for (var i = 0; i < tableNameArr.Count; ++i)
+            {
+                var table = tableNameArr[i];
+                var joinQuery = joinOns[i];
+
+                sql.AppendFormat(" INNER JOIN {0} ON {1}", table, joinQuery);
+            }
+            if (!string.IsNullOrEmpty(where))
+            {
+                sql.AppendFormat(" WHERE {0}", where);
+            }
+            return sql.ToString();
+        }
+
         #endregion
     }
 }
