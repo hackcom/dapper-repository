@@ -22,12 +22,12 @@ namespace Hackcom.Dapper
         T Get(object primaryKey);
         IEnumerable<T> Find(string where, object param = null);
         IEnumerable<T> Select(string extraQuery, object param = null);
-        IEnumerable<T> Join<T1>(IDapperRepository<T1> join1, Func<T, T1, T> map, string joinOn, string where = null);
-        IEnumerable<T> Join<T1, T2>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, Func<T, T1, T2, T> map, string joinOn, string where = null);
-        IEnumerable<T> Join<T1, T2, T3>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, Func<T, T1, T2, T3, T> map, string joinOn, string where = null);
-        IEnumerable<T> Join<T1, T2, T3, T4>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, Func<T, T1, T2, T3, T4, T> map, string joinOn, string where = null);
-        IEnumerable<T> Join<T1, T2, T3, T4, T5>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, Func<T, T1, T2, T3, T4, T5, T> map, string joinOn, string where = null);
-        IEnumerable<T> Join<T1, T2, T3, T4, T5, T6>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, IDapperRepository<T6> join6, Func<T, T1, T2, T3, T4, T5, T6, T> map, string joinOn, string where = null);
+        IEnumerable<T> Join<T1>(IDapperRepository<T1> join1, Func<T, T1, T> map, string joinOn, string where = null, string joinHint = null);
+        IEnumerable<T> Join<T1, T2>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, Func<T, T1, T2, T> map, string joinOn, string where = null, string joinHint = null);
+        IEnumerable<T> Join<T1, T2, T3>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, Func<T, T1, T2, T3, T> map, string joinOn, string where = null, string joinHint = null);
+        IEnumerable<T> Join<T1, T2, T3, T4>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, Func<T, T1, T2, T3, T4, T> map, string joinOn, string where = null, string joinHint = null);
+        IEnumerable<T> Join<T1, T2, T3, T4, T5>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, Func<T, T1, T2, T3, T4, T5, T> map, string joinOn, string where = null, string joinHint = null);
+        IEnumerable<T> Join<T1, T2, T3, T4, T5, T6>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, IDapperRepository<T6> join6, Func<T, T1, T2, T3, T4, T5, T6, T> map, string joinOn, string where = null, string joinHint = null);
 
         int Insert(T entity);
         T Add(T item);
@@ -91,18 +91,6 @@ namespace Hackcom.Dapper
             {
                 if (string.IsNullOrEmpty(_querySelect))
                 {
-                    //string selectFields = string.Empty;
-                    //if (EntityFields.Any())
-                    //{
-                    //    var fields = EntityFields.TakeWhile((t, i) => DbFields.Count >= i).Select((t, i) => string.Format("{0}.{1} AS {2}", TableName, DbFields[i], t)).ToList();
-                    //    selectFields = string.Join(",", fields);
-                    //}
-                    //else
-                    //{
-                    //    selectFields = string.Join(",", DbFields);
-                    //}
-
-                    //_querySelect = string.Format("Select {1} From {0}", TableName, selectFields);
                     _querySelect = string.Format("Select {1} From {0}", TableName, SelectFields);
                 }
 
@@ -303,7 +291,7 @@ namespace Hackcom.Dapper
             return UsingDb(db => db.Query<T>(sql, param));
         }
 
-        public virtual IEnumerable<T> Join<T1>(IDapperRepository<T1> join1, Func<T, T1, T> map, string joinOn, string where = null)
+        public virtual IEnumerable<T> Join<T1>(IDapperRepository<T1> join1, Func<T, T1, T> map, string joinOn, string where = null, string joinHint = null)
         {
             var fieldArr = new List<string>()
             {
@@ -314,12 +302,12 @@ namespace Hackcom.Dapper
             {
                 join1.TableName
             };
-            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr, joinHint);
             var splitOn = GetSplitOn(joinOn);
             return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
         }
 
-        public virtual IEnumerable<T> Join<T1, T2>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, Func<T, T1, T2, T> map, string joinOn, string where = null)
+        public virtual IEnumerable<T> Join<T1, T2>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, Func<T, T1, T2, T> map, string joinOn, string where = null, string joinHint = null)
         {
             var fieldArr = new List<string>()
             {
@@ -332,12 +320,12 @@ namespace Hackcom.Dapper
                 join1.TableName,
                 join2.TableName
             };
-            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr, joinHint);
             var splitOn = GetSplitOn(joinOn);
             return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
         }
 
-        public virtual IEnumerable<T> Join<T1, T2, T3>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, Func<T, T1, T2, T3, T> map, string joinOn, string where = null)
+        public virtual IEnumerable<T> Join<T1, T2, T3>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, Func<T, T1, T2, T3, T> map, string joinOn, string where = null, string joinHint = null)
         {
             var fieldArr = new List<string>()
             {
@@ -352,12 +340,12 @@ namespace Hackcom.Dapper
                 join2.TableName,
                 join3.TableName
             };
-            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr, joinHint);
             var splitOn = GetSplitOn(joinOn);
             return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
         }
 
-        public virtual IEnumerable<T> Join<T1, T2, T3, T4>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, Func<T, T1, T2, T3, T4, T> map, string joinOn, string where = null)
+        public virtual IEnumerable<T> Join<T1, T2, T3, T4>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, Func<T, T1, T2, T3, T4, T> map, string joinOn, string where = null, string joinHint = null)
         {
             var fieldArr = new List<string>()
             {
@@ -374,12 +362,12 @@ namespace Hackcom.Dapper
                 join3.TableName,
                 join4.TableName
             };
-            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr, joinHint);
             var splitOn = GetSplitOn(joinOn);
             return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
         }
 
-        public virtual IEnumerable<T> Join<T1, T2, T3, T4, T5>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, Func<T, T1, T2, T3, T4, T5, T> map, string joinOn, string where = null)
+        public virtual IEnumerable<T> Join<T1, T2, T3, T4, T5>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, Func<T, T1, T2, T3, T4, T5, T> map, string joinOn, string where = null, string joinHint = null)
         {
             var fieldArr = new List<string>()
             {
@@ -398,12 +386,12 @@ namespace Hackcom.Dapper
                 join4.TableName,
                 join5.TableName
             };
-            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr);
+            var sql = GetJoinQuery(joinOn, where, fieldArr, tableNameArr, joinHint);
             var splitOn = GetSplitOn(joinOn);
             return UsingDb(db => db.Query(sql, map, splitOn: splitOn));
         }
         
-        public virtual IEnumerable<T> Join<T1, T2, T3, T4, T5, T6>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, IDapperRepository<T6> join6, Func<T, T1, T2, T3, T4, T5, T6, T> map, string joinOn, string where = null)
+        public virtual IEnumerable<T> Join<T1, T2, T3, T4, T5, T6>(IDapperRepository<T1> join1, IDapperRepository<T2> join2, IDapperRepository<T3> join3, IDapperRepository<T4> join4, IDapperRepository<T5> join5, IDapperRepository<T6> join6, Func<T, T1, T2, T3, T4, T5, T6, T> map, string joinOn, string where = null, string joinHint = null)
         {
             var fieldArr = new List<string>()
             {
@@ -514,7 +502,7 @@ namespace Hackcom.Dapper
             return joinOn.Split(',').Select(j => j.Trim());
         }
 
-        private string GetJoinQuery(string joinOn, string where, List<string> fieldArr, List<string> tableNameArr)
+        private string GetJoinQuery(string joinOn, string where, List<string> fieldArr, List<string> tableNameArr, string joinHint = null)
         {
             var joinOns = GetJoinOn(joinOn).ToArray();
 
@@ -523,6 +511,8 @@ namespace Hackcom.Dapper
                 throw new Exception("Table number and join number does not match.");
             }
 
+            var joinHints = joinHint == null ? new List<string>() : joinHint.Split(',').ToList();
+
             var fields = string.Join(",", fieldArr);
             var sql = new StringBuilder();
             sql.AppendFormat("SELECT {0} FROM {1}", fields, TableName);
@@ -530,8 +520,9 @@ namespace Hackcom.Dapper
             {
                 var table = tableNameArr[i];
                 var joinQuery = joinOns[i];
+                var innerOuter = joinHints.Count > i ? joinHints[i] : "INNER";
 
-                sql.AppendFormat(" INNER JOIN {0} ON {1}", table, joinQuery);
+                sql.AppendFormat(" {0} JOIN {1} ON {2}", innerOuter, table, joinQuery);
             }
             if (!string.IsNullOrEmpty(where))
             {
