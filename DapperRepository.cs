@@ -17,6 +17,7 @@ namespace Hackcom.Dapper
     {
         string SelectFields { get; }
         string TableName { get; }
+        int TopN { get; set; }
 
         IEnumerable<T> GetAll();
         T Get(object primaryKey);
@@ -85,6 +86,18 @@ namespace Hackcom.Dapper
             set { _selectFields = value; }
         }
 
+        private int _topN;
+        public int TopN
+        {
+            get { return _topN; }
+            set
+            {
+                _topN = value;
+                QuerySelect = null;
+            }
+
+        }
+
         private string _querySelect;
         protected string QuerySelect
         {
@@ -92,7 +105,8 @@ namespace Hackcom.Dapper
             {
                 if (string.IsNullOrEmpty(_querySelect))
                 {
-                    _querySelect = string.Format("Select {1} From {0}", TableName, SelectFields);
+                    var topN = TopN > 0 ? string.Format(" TOP {0} ", TopN) : "";
+                    _querySelect = string.Format("Select{0} {1} From {2}", topN, SelectFields, TableName);
                 }
 
                 return _querySelect;
