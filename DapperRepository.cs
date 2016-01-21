@@ -105,8 +105,7 @@ namespace Hackcom.Dapper
             {
                 if (string.IsNullOrEmpty(_querySelect))
                 {
-                    var topN = TopN > 0 ? string.Format(" TOP {0} ", TopN) : "";
-                    _querySelect = string.Format("Select{0} {1} From {2}", topN, SelectFields, TableName);
+                    _querySelect = string.Format("Select{0} {1} From {2}", GetTopNQuery(), SelectFields, TableName);
                 }
 
                 return _querySelect;
@@ -592,7 +591,8 @@ namespace Hackcom.Dapper
 
             var fields = Concat(joinSelectFields);
             var sql = new StringBuilder();
-            sql.AppendFormat("SELECT {0} FROM {1}", fields, TableName);
+            
+            sql.AppendFormat("SELECT{0} {1} FROM {2}", GetTopNQuery(), fields, TableName);
             for (var i = 0; i < joinTableNames.Count; ++i)
             {
                 var table = joinTableNames[i];
@@ -611,6 +611,11 @@ namespace Hackcom.Dapper
         private string Concat(IEnumerable<string> arr, string separator = ",")
         {
             return arr.Aggregate((x, y) => x + separator + y);
+        }
+
+        private string GetTopNQuery()
+        {
+            return TopN > 0 ? string.Format(" TOP {0} ", TopN) : "";
         }
 
         #endregion
